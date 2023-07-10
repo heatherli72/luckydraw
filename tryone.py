@@ -6,6 +6,13 @@ def load_participants(file):
     participants = pd.read_excel(file)
     return participants["Name"].tolist()
 
+def display_sample_data():
+    st.subheader("Sample Data")
+    sample_data = pd.DataFrame({
+        "Name": ["John", "Jane", "Michael", "Emily", "David"]
+    })
+    st.write(sample_data)
+
 def run_lucky_draw(participants):
     st.title("Lucky Draw Program")
     st.write("Welcome to the lucky draw!")
@@ -15,6 +22,9 @@ def run_lucky_draw(participants):
     file = st.file_uploader("Upload Excel File", type=["xlsx"])
     if file is not None:
         participants = load_participants(file)
+
+    # Display sample data format
+    display_sample_data()
 
     # Rounds of lucky draw
     st.write("Step 2: Enter the details for each round of lucky draw.")
