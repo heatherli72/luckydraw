@@ -1,33 +1,17 @@
-import pandas as pd
 import random
 import streamlit as st
-
-def load_participants(file):
-    participants = pd.read_excel(file)
-    return participants["Name"].tolist()
-
-def display_sample_data():
-    st.subheader("Sample Data")
-    sample_data = pd.DataFrame({
-        "Name": ["John", "Jane", "Michael", "Emily", "David"]
-    })
-    st.write(sample_data)
 
 def run_lucky_draw(participants):
     st.title("Lucky Draw Program")
     st.write("Welcome to the lucky draw!")
 
-    # Upload Excel file
-    st.write("Step 1: Upload the Excel file with the participants' names.")
-    file = st.file_uploader("Upload Excel File", type=["xlsx"])
-    if file is not None:
-        participants = load_participants(file)
-
     # Display sample data format
-    display_sample_data()
+    st.subheader("Sample Data")
+    st.write("The participants' names:")
+    st.write(participants)
 
     # Rounds of lucky draw
-    st.write("Step 2: Enter the details for each round of lucky draw.")
+    st.write("Step 1: Enter the details for each round of lucky draw.")
     rounds = []
     round_index = 1
     while True:
@@ -59,12 +43,11 @@ def run_lucky_draw(participants):
 
         # Download results
         if len(winners) > 0:
-            results_df = pd.DataFrame({"Round": [round_name for round_name, _ in rounds for _ in range(round_select_number)],
-                                       "Winner": winners})
             st.write("\n\n")
             st.write("Download the results:")
-            st.write(results_df)
-            st.write(results_df.to_csv(index=False), download_button=True, file_name="lucky_draw_results.csv", mime="text/csv")
+            results = [(round_name, winner) for (round_name, _), winner in zip(rounds, winners)]
+            st.write(results)
 
 # Run the lucky draw program
-run_lucky_draw([])
+participants_list = ["John", "Jane", "Michael", "Emily", "David"]
+run_lucky_draw(participants_list)
