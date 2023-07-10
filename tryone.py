@@ -1,29 +1,21 @@
+import random
 import streamlit as st
-import pandas as pd
 
-# Function to handle the file upload
-def file_upload():
-    uploaded_file = st.file_uploader("Upload Excel", type=['xlsx'])
-    if uploaded_file is not None:
-        data = pd.read_excel(uploaded_file)
-        st.write(data)
-        return data
-    return None
+def run_lucky_draw(participants):
+    st.title("Lucky Draw Program")
+    st.write("Welcome to the lucky draw! Click the button below to select a winner.")
 
-# Function to draw the winners
-def draw(data, num_winners):
-    if st.button('Draw'):
-        winners = data.sample(n=num_winners)
-        st.write('Winners:')
-        st.write(winners)
+    winner = st.button("Select Winner")
 
-# Main program
-def main():
-    data = file_upload()
-    if data is not None:
-        num_winners = st.number_input('Number of winners', min_value=1, max_value=len(data), value=1, step=1)
-        draw(data, num_winners)
+    if winner:
+        if len(participants) > 0:
+            selected_winner = random.choice(participants)
+            st.write(f"Congratulations! The winner is: {selected_winner}")
+            participants.remove(selected_winner)
+        else:
+            st.write("There are no participants left.")
 
-# Run the main program
-if __name__ == "__main__":
-    main()
+# Sample list of participants
+participants_list = ["John", "Jane", "Michael", "Emily", "David"]
+
+run_lucky_draw(participants_list)
