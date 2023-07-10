@@ -13,6 +13,22 @@ def run_lucky_draw():
         initial_sidebar_state="collapsed"
     )
 
+    # Function to run lucky draw round
+    def run_lucky_draw_round(round_name, round_select_number, participants):
+        if len(participants) < round_select_number:
+            st.write(f"Not enough participants for Round '{round_name}'")
+            return
+
+        st.write(f"\nRound: {round_name}")
+        winners = random.sample(participants, round_select_number)
+        for i, winner in enumerate(winners, start=1):
+            st.write(f"Winner {i}: {winner}")
+        st.write(f"Congratulations to the {round_select_number} winners of {round_name}!")
+
+        # Remove winners from the participant list
+        participants = [participant for participant in participants if participant not in winners]
+        return participants, winners
+
     # Main lucky draw program
     st.title("Lucky Draw Program")
     st.write("Welcome to the lucky draw!")
@@ -24,69 +40,36 @@ def run_lucky_draw():
     if file is not None:
         participants = load_participants(file)
 
+    # Rounds of lucky draw
+    st.write("Step 2: Enter the details for each round of lucky draw.")
     rounds = []
     round_index = 1
-
-    # First round input
-    round_name = st.text_input(f"Round {round_index} - Name", key=f"round_name_{round_index}")
-    round_select_number = st.number_input(f"Round {round_index} - Number of Winners", min_value=1, value=1, step=1, key=f"round_select_number_{round_index}")
-    start_lucky_draw = st.button(f"Start Round {round_index}")
-
-    if start_lucky_draw:
-        if len(participants) < round_select_number:
-            st.write(f"Not enough participants for Round '{round_name}'")
-        else:
-            winners = random.sample(participants, round_select_number)
-            st.write(f"\nRound: {round_name}")
-            st.write(f"Congratulations to the {round_select_number} winners of {round_name}!")
-
-            for i, winner in enumerate(winners, start=1):
-                st.write(f"Winner {i}: {winner}")
-
-            results_df = pd.DataFrame({"Winner": winners})
-            st.write("\nDownload the winners' list:")
-            st.write(results_df.to_csv(index=False), download_button=True, file_name=f"winners_list_round_{round_index}.csv", mime="text/csv")
-
-            add_another_round = st.button("Add Another Round")
-            if add_another_round:
-                rounds.append((round_name, winners))
-                participants = [participant for participant in participants if participant not in winners]
-                round_index += 1
-
-    # Additional rounds
-    while add_another_round:
+    while True:
         round_name = st.text_input(f"Round {round_index} - Name", key=f"round_name_{round_index}")
         round_select_number = st.number_input(f"Round {round_index} - Number of Winners", min_value=1, value=1, step=1, key=f"round_select_number_{round_index}")
-        start_lucky_draw = st.button(f"Start Round {round_index}")
+        rounds.append((round_name, round_select_number))
 
-        if start_lucky_draw:
-            if len(participants) < round_select_number:
-                st.write(f"Not enough participants for Round '{round_name}'")
-            else:
-                winners = random.sample(participants, round_select_number)
-                st.write(f"\nRound: {round_name}")
-                st.write(f"Congratulations to the {round_select_number} winners of {round_name}!")
+        add_round = st.button(f"Add Another Round {round_index}")
+        if not add_round:
+            break
+        round_index += 1
 
-                for i, winner in enumerate(winners, start=1):
-                    st.write(f"Winner {i}: {winner}")
+    # Start lucky draw
+    start_lucky_draw = st.button("Start Lucky Draw")
+    if start_lucky_draw:
+        all_winners = []
+        add_another_round = True
+        while add_another_round:
+            for round_name, round_select_number in rounds:
+                participants, winners = run_lucky_draw_round(round_name, round_select_number, participants)
+                all_winners.append((round_name, winners))
+                
+            add_another_round = st.button("Add Another Round")
 
-                results_df = pd.DataFrame({"Winner": winners})
-                st.write("\nDownload the winners' list:")
-                st.write(results_df.to_csv(index=False), download_button=True, file_name=f"winners_list_round_{round_index}.csv", mime="text/csv")
-
-                add_another_round = st.button("Add Another Round")
-                if add_another_round:
-                    rounds.append((round_name, winners))
-                    participants = [participant for participant in participants if participant not in winners]
-                    round_index += 1
-                else:
-                    break
-
-    # Download final results
-    if rounds:
-        st.write("\n\nDownload the final winners' list:")
-        results_df = pd.DataFrame([(round_name, winner) for round_name, winners in rounds for winner in winners], columns=["Round", "Winner"])
-        st.write(results_df.to_csv(index=False), download_button=True, file_name="final_winners_list.csv", mime="text/csv")
+        # Download results
+        st.write("\n\nDownload the results:")
+        results_df = pd.DataFrame([(round_name, winner) for round_name, winners in all_winners for winner in winners], columns=["Round", "Winner"])
+        st.write(results_df.to_csv(index=False), download_button=True, file_name="lucky_draw_results.csv", mime="text/csv")
 
 # Run the lucky draw program
 run_lucky_draw()
