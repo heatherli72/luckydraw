@@ -1,12 +1,25 @@
 import streamlit as st
 import pandas as pd
 import random
+import base64
+from faker import Faker
 
-# Create a dictionary to store the results of each round
-results = {}
+# Function to create a download link for the results
+def get_table_download_link(df, filename, linkname):
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
+    href = f'<a href="data:file/csv;base64,{b64}" download="{filename}">{linkname}</a>'
+    return href
 
-# Display an option to upload an image for background (this is optional and won't affect the function of the app)
-uploaded_file_bg = st.sidebar.file_uploader("Upload an image for background", type=['png', 'jpg', 'jpeg'])
+# Generate a sample participant list
+def generate_sample_list(num_participants=500):
+    fake = Faker()
+    names = [fake.name() for _ in range(num_participants)]
+    df_sample = pd.DataFrame(names, columns=['Name'])
+    return df_sample
+
+df_sample = generate_sample_list()
+st.sidebar.markdown(get_table_download_link(df_sample, 'sample_participant_list.csv', 'Download Sample Participant List'), unsafe_allow_html=True)
 
 # Display an option to upload the participant list
 uploaded_file = st.file_uploader("Upload the participant list", type=['csv', 'xlsx'])
@@ -28,6 +41,7 @@ if uploaded_file is not None:
     start = st.button("Start the lucky draw")
 
     if start:
+        results = {}
         for i in range(num_rounds):
             round_name = "Round " + str(i+1)
             if len(participants) >= winners_each_round:
@@ -44,12 +58,5 @@ if uploaded_file is not None:
                 break
 
         # After all rounds, allow the user to download the results
-        st.markdown(get_table_download_link(results), unsafe_allow_html=True)
-
-# Function to create a download link for the results
-def get_table_download_link(results):
-    df_results = pd.DataFrame(results)
-    csv = df_results.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-    href = f'<a href="data:file/csv;base64,{b64}">Download Results</a>'
-    return href
+        df_results = pd.DataFrame.from_dict(results, orient='index').transpose()
+        st.markdown(get_table_download_link(df_results, 'draw_results.csv', 'Download Draw Results'), unsafe_allow_html=True)
