@@ -1,55 +1,96 @@
-import streamlit as st
 import pandas as pd
 import random
+import streamlit as st
 
-# Create a dictionary to store the results of each round
-results = {}
+def load_participants(file):
+    participants = pd.read_excel(file)
+    return participants["Name"].tolist()
 
-# Display an option to upload an image for background (this is optional and won't affect the function of the app)
-uploaded_file_bg = st.sidebar.file_uploader("Upload an image for background", type=['png', 'jpg', 'jpeg'])
+def run_lucky_draw():
+    st.set_page_config(
+        page_title="Lucky Draw Program",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
 
-# Display an option to upload the participant list
-uploaded_file = st.file_uploader("Upload the participant list", type=['csv', 'xlsx'])
+    # Upload background image
+    st.sidebar.title("Lucky Draw Settings")
+    background_img = st.sidebar.file_uploader("Upload Background Image", type=["jpg", "jpeg", "png"])
 
-# If a file is uploaded, load it into a dataframe
-if uploaded_file is not None:
-    try:
-        df = pd.read_csv(uploaded_file)
-    except Exception as e:
-        df = pd.read_excel(uploaded_file)
+    # Set background image
+    if background_img is not None:
+        st.markdown(
+            f"""
+            <style>
+            .reportview-container {{
+                background: url(data:image/png;base64,{background_img.read().encode("base64").decode()}) no-repeat center center fixed;
+                background-size: cover;
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
-    participants = df.iloc[:, 0].values.tolist()  # assuming participant names are in the first column
+    # Function to run lucky draw
+    def run_lucky_draw_round(participants, round_name, round_select_number):
+        if len(participants) < round_select_number:
+            st.write(f"Not enough participants for Round '{round_name}'")
+            return
 
-    # Allow the user to input the number of rounds and number of winners for each round
-    num_rounds = st.number_input('Enter the number of rounds', min_value=1, value=1, step=1)
-    winners_each_round = st.number_input('Enter the number of winners in each round', min_value=1, value=1, step=1)
+        st.write(f"\nRound: {round_name}")
+        selected_winners = random.sample(participants, round_select_number)
+        for winner in selected_winners:
+            participants.remove(winner)
+            st.write(f"Winner: {winner}")
+        st.write(f"Congratulations to the {round_select_number} winners of {round_name}!")
 
-    # Start the lucky draw with a button
-    start = st.button("Start the lucky draw")
+        return participants
 
-    if start:
-        for i in range(num_rounds):
-            round_name = "Round " + str(i+1)
-            if len(participants) >= winners_each_round:
-                winners = random.sample(participants, winners_each_round)
-                results[round_name] = winners
+    # Main lucky draw program
+    st.title("Lucky Draw Program")
+    st.write("Welcome to the lucky draw!")
 
-                # Display the winners and round name
-                st.success(f"Congratulations to the {winners_each_round} winners of {round_name}: {', '.join(winners)}")
+    # Upload Excel file
+    st.write("Step 1: Upload the Excel file with the participants' names.")
+    file = st.file_uploader("Upload Excel File", type=["xlsx"])
+    participants = []
+    if file is not None:
+        participants = load_participants(file)
 
-                # Remove winners from the participants list
-                participants = [participant for participant in participants if participant not in winners]
-            else:
-                st.error("Not enough participants for another round.")
-                break
+    # Display participants' names
+    st.write("\nParticipants:")
+    st.write(participants)
 
-        # After all rounds, allow the user to download the results
-        st.markdown(get_table_download_link(results), unsafe_allow_html=True)
+    # Rounds of lucky draw
+    st.write("Step 2: Enter the details for each round of lucky draw.")
+    rounds = []
+    round_index = 1
+    while True:
+        round_name = st.text_input(f"Round {round_index} - Name", key=f"round_name_{round_index}")
+        round_select_number = st.number_input(f"Round {round_index} - Number of Winners", min_value=1, value=1, step=1, key=f"round_select_number_{round_index}")
+        rounds.append((round_name, int(round_select_number)))
 
-# Function to create a download link for the results
-def get_table_download_link(results):
-    df_results = pd.DataFrame(results)
-    csv = df_results.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-    href = f'<a href="data:file/csv;base64,{b64}">Download Results</a>'
-    return href
+        add_round = st.button(f"Add Another Round {round_index}")
+        if not add_round:
+            break
+        round_index += 1
+
+    # Start lucky draw
+    start_lucky_draw = st.button("Start Lucky Draw")
+    if start_lucky_draw:
+        for round_name, round_select_number in rounds:
+            participants = run_lucky_draw_round(participants, round_name, round_select_number)
+
+        # Download results
+        if len(participants) == 0:
+            st.write("\n\n")
+            st.write("Download the results:")
+            results_df = pd.DataFrame({
+                "Round": [round_name for round_name, _ in rounds for _ in range(round_select_number)],
+                "Winner": [winner for _, round_select_number in rounds for winner in random.sample(participants, round_select_number)]
+            })
+            st.write(results_df)
+            st.write(results_df.to_csv(index=False), download_button=True, file_name="lucky_draw_results.csv", mime="text/csv")
+
+# Run the lucky draw program
+run_lucky_draw()
