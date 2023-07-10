@@ -1,6 +1,7 @@
 import pandas as pd
 import random
 import streamlit as st
+import base64
 
 def load_participants(file):
     participants = pd.read_excel(file)
@@ -13,25 +14,7 @@ def run_lucky_draw():
         initial_sidebar_state="collapsed"
     )
 
-    # Upload background image
-    st.sidebar.title("Lucky Draw Settings")
-    background_img = st.sidebar.file_uploader("Upload Background Image", type=["jpg", "jpeg", "png"])
-
-    # Set background image
-    if background_img is not None:
-        st.markdown(
-            f"""
-            <style>
-            .reportview-container {{
-                background: url(data:image/png;base64,{background_img.read().encode("base64").decode()}) no-repeat center center fixed;
-                background-size: cover;
-            }}
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # Function to run lucky draw
+    # Function to run lucky draw round
     def run_lucky_draw_round(participants, round_name, round_select_number):
         if len(participants) < round_select_number:
             st.write(f"Not enough participants for Round '{round_name}'")
@@ -49,6 +32,25 @@ def run_lucky_draw():
     # Main lucky draw program
     st.title("Lucky Draw Program")
     st.write("Welcome to the lucky draw!")
+
+    # Upload background image
+    st.sidebar.title("Lucky Draw Settings")
+    background_img = st.sidebar.file_uploader("Upload Background Image", type=["jpg", "jpeg", "png"])
+
+    # Set background image
+    if background_img is not None:
+        encoded_img = base64.b64encode(background_img.read()).decode()
+        st.markdown(
+            f"""
+            <style>
+            .reportview-container {{
+                background: url(data:image/png;base64,{encoded_img}) no-repeat center center fixed;
+                background-size: cover;
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
     # Upload Excel file
     st.write("Step 1: Upload the Excel file with the participants' names.")
